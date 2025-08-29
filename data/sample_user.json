@@ -1,0 +1,32 @@
+[
+    {
+      "user_id": "student_01",
+      "persona": "High School Student",
+      "description": "A 17-year-old student interested in technology but unsure which specific field (e.g., AI, web development, cybersecurity) to pursue in college. Lacks professional experience.",
+      "sample_queries": [
+        "What tech career has the best future?",
+        "I like video games, can I make a career out of it?",
+        "What subjects should I focus on for computer science?"
+      ]
+    },
+    {
+      "user_id": "career_changer_01",
+      "persona": "Mid-Career Professional",
+      "description": "A 35-year-old marketing manager feeling unfulfilled and looking to transition into data analytics. Has strong soft skills but limited technical knowledge.",
+      "sample_queries": [
+        "How can I switch from marketing to data analytics?",
+        "What skills do I need to learn for a data analyst job?",
+        "Are there any certifications that can help me switch careers?"
+      ]
+    },
+    {
+      "user_id": "unemployed_01",
+      "persona": "Unemployed Job Seeker",
+      "description": "A 28-year-old who was recently laid off from a project management role. Feeling discouraged and looking for advice on finding a new job and improving their resume.",
+      "sample_queries": [
+        "I just got laid off. What should I do first?",
+        "Can you help me improve my resume for project manager roles?",
+        "How do I answer interview questions about being laid off?"
+      ]
+    }
+  ]

@@ -1,0 +1,22 @@
+[
+    {
+      "test_name": "test_greeting_and_vague_query",
+      "input": "Hi, I need career advice.",
+      "expected_behavior": "The model should greet the user back and ask a clarifying question to understand their situation better."
+    },
+    {
+      "test_name": "test_specific_career_path_query",
+      "input": "What are the steps to become a data scientist?",
+      "expected_behavior": "The model should provide a structured list of steps, including education, skills to learn, tools to master, and career progression."
+    },
+    {
+      "test_name": "test_career_change_query",
+      "input": "I'm a 40-year-old accountant and I want to switch to software development. Is it too late?",
+      "expected_behavior": "The model should be encouraging, address the 'is it too late' concern directly, and provide actionable steps for a career changer."
+    },
+    {
+      "test_name": "test_unrelated_query",
+      "input": "What is the recipe for lasagna?",
+      "expected_behavior": "The model should politely decline the unrelated request and steer the conversation back to career advice."
+    }
+  ]
