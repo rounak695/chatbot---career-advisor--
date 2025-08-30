@@ -1,4 +1,3 @@
-# chatbot ( career advisor )
 # Career Guidance Chatbot 🎯
 
 An intelligent career counseling chatbot built with Streamlit that provides personalized career advice through conversational AI, rule-based recommendations, and comprehensive data analytics.
