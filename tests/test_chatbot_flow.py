@@ -251,4 +251,226 @@ class TestUIComponents(unittest.TestCase):
     def test_career_advice_formatting(self):
         """Test career advice formatting"""
         advice_data = {
-            'title': '
+            'title': 'Software Developer Career Path',
+            'content': 'Software development is a growing field with many opportunities.',
+            'sections': [
+                {
+                    'title': 'Key Skills',
+                    'items': ['Python', 'JavaScript', 'Problem Solving', 'Communication']
+                },
+                {
+                    'title': 'Career Progression',
+                    'content': 'Junior Developer → Senior Developer → Tech Lead → Manager'
+                }
+            ],
+            'action_items': [
+                'Build a portfolio of projects',
+                'Contribute to open source',
+                'Network with other developers'
+            ],
+            'resources': [
+                {'title': 'Learn Python', 'url': 'https://python.org'},
+                'Practice coding daily'
+            ]
+        }
+        
+        formatted = format_career_advice(advice_data)
+        
+        # Should contain proper HTML structure
+        self.assertIn('<h3', formatted)
+        self.assertIn('Software Developer Career Path', formatted)
+        self.assertIn('<ul', formatted)
+        self.assertIn('<ol', formatted)
+        self.assertIn('<a href=', formatted)
+    
+    def test_skills_list_formatting(self):
+        """Test skills list formatting"""
+        from utils.formatter import format_skills_list
+        
+        skills = ['Python', 'JavaScript', 'React', 'Node.js']
+        formatted = format_skills_list(skills, 'Technical Skills')
+        
+        self.assertIn('Technical Skills', formatted)
+        self.assertIn('Python', formatted)
+        self.assertIn('<span', formatted)  # Should create skill badges
+    
+    def test_message_types_formatting(self):
+        """Test different message type formatting"""
+        from utils.formatter import format_error_message, format_success_message, format_info_message
+        
+        error_msg = format_error_message("Something went wrong")
+        success_msg = format_success_message("Operation completed")
+        info_msg = format_info_message("Here's some information")
+        
+        self.assertIn('Error:', error_msg)
+        self.assertIn('Success:', success_msg) 
+        self.assertIn('Info:', info_msg)
+        
+        # Should have proper styling
+        self.assertIn('background-color:', error_msg)
+        self.assertIn('background-color:', success_msg)
+        self.assertIn('background-color:', info_msg)
+
+class TestIntegrationFlow(unittest.TestCase):
+    """Integration tests for complete user flows"""
+    
+    def setUp(self):
+        """Set up integration test environment"""
+        self.chatbot = ChatbotFramework()
+        self.session_id = "integration_test_session"
+        
+    def test_complete_career_consultation_flow(self):
+        """Test a complete career consultation conversation"""
+        conversation_flow = [
+            {
+                'user_input': "Hi, I'm looking for career guidance",
+                'expected_intent': 'greeting'
+            },
+            {
+                'user_input': "I'm interested in technology but not sure which path to take",
+                'expected_intent': 'career_advice'
+            },
+            {
+                'user_input': "What programming skills should I learn first?",
+                'expected_intent': 'skills_inquiry'
+            },
+            {
+                'user_input': "How do I write a good tech resume?",
+                'expected_intent': 'resume_help'
+            },
+            {
+                'user_input': "What's the job market like for developers?",
+                'expected_intent': 'market_trends'
+            },
+            {
+                'user_input': "Thanks for all the help!",
+                'expected_intent': 'farewell'
+            }
+        ]
+        
+        conversation_history = []
+        
+        for step in conversation_flow:
+            user_input = step['user_input']
+            expected_intent = step['expected_intent']
+            
+            # Test intent detection
+            detected_intent = self.chatbot.detect_intent(user_input)
+            self.assertEqual(detected_intent, expected_intent, 
+                           f"Failed intent detection for: '{user_input}'")
+            
+            # Process message and get response
+            response = self.chatbot.process_message(
+                user_input, 
+                self.session_id, 
+                conversation_history
+            )
+            
+            # Verify response quality
+            self.assertIsInstance(response, str)
+            self.assertGreater(len(response), 20)  # Should be substantial
+            self.assertLess(len(response), 2000)   # But not too long
+            
+            # Add to conversation history
+            conversation_history.extend([
+                {"role": "user", "content": user_input, "timestamp": datetime.now().isoformat()},
+                {"role": "assistant", "content": response, "timestamp": datetime.now().isoformat()}
+            ])
+        
+        # Verify session summary
+        summary = self.chatbot.get_session_summary(self.session_id)
+        self.assertEqual(len(conversation_flow), summary['total_intents'])
+        self.assertGreater(summary['unique_intents'], 1)
+    
+    def test_context_continuity(self):
+        """Test that context is maintained across conversation"""
+        # Start with career advice
+        response1 = self.chatbot.process_message(
+            "I want to become a data scientist",
+            self.session_id,
+            []
+        )
+        
+        conversation_history = [
+            {"role": "user", "content": "I want to become a data scientist", "timestamp": datetime.now().isoformat()},
+            {"role": "assistant", "content": response1, "timestamp": datetime.now().isoformat()}
+        ]
+        
+        # Follow up should reference previous context
+        response2 = self.chatbot.process_message(
+            "What skills do I need?",
+            self.session_id,
+            conversation_history
+        )
+        
+        # The bot should understand this is about data science skills
+        self.assertIsInstance(response2, str)
+        self.assertGreater(len(response2), 20)
+    
+    def test_error_recovery(self):
+        """Test error recovery and graceful degradation"""
+        # Test with unusual input
+        unusual_inputs = [
+            "",  # Empty string
+            "   ",  # Whitespace only
+            "a" * 1000,  # Very long string
+            "🤖🚀💻🎯🔥",  # Emoji only
+            "What about $$ money $$?",  # Special characters
+        ]
+        
+        for unusual_input in unusual_inputs:
+            with self.subTest(input=unusual_input):
+                try:
+                    response = self.chatbot.process_message(
+                        unusual_input,
+                        self.session_id,
+                        []
+                    )
+                    # Should get some kind of response, not crash
+                    self.assertIsInstance(response, str)
+                    self.assertGreater(len(response), 0)
+                except Exception as e:
+                    self.fail(f"Chatbot crashed on input '{unusual_input}': {e}")
+
+def run_performance_tests():
+    """Run performance tests (not part of standard test suite)"""
+    import time
+    
+    chatbot = ChatbotFramework()
+    session_id = "performance_test"
+    
+    # Test response time
+    start_time = time.time()
+    for i in range(100):
+        response = chatbot.process_message(
+            f"Test message {i}",
+            session_id,
+            []
+        )
+    end_time = time.time()
+    
+    avg_response_time = (end_time - start_time) / 100
+    print(f"Average response time: {avg_response_time:.3f} seconds")
+    
+    # Test memory usage with long conversations
+    conversation_history = []
+    for i in range(50):
+        user_msg = f"This is test message number {i} in a long conversation"
+        response = chatbot.process_message(user_msg, session_id, conversation_history)
+        
+        conversation_history.extend([
+            {"role": "user", "content": user_msg, "timestamp": datetime.now().isoformat()},
+            {"role": "assistant", "content": response, "timestamp": datetime.now().isoformat()}
+        ])
+    
+    print(f"Long conversation test completed with {len(conversation_history)} messages")
+
+if __name__ == '__main__':
+    # Run standard test suite
+    unittest.main(argv=[''], verbosity=2, exit=False)
+    
+    # Optionally run performance tests
+    print("\n" + "="*50)
+    print("Running Performance Tests...")
+    print("="*50)
+    run_performance_tests()
