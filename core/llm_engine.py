@@ -1,28 +1,17 @@
-import os
-from dotenv import load_dotenv
-
+import streamlit as st
 from langchain_openai import ChatOpenAI
-from langchain_core.runnables.history import RunnableWithMessageHistory
-from langchain_core.chat_history import InMemoryChatMessageHistory
+# ... other imports
 
-from core.prompts import CAREER_ADVISOR_PROMPT
-from utils.errors import LLMResponseError
-
-# Load environment variables from .env file
-load_dotenv()
+# NO need for load_dotenv or os
 
 class LLMEngine:
-    """
-    Manages the connection and interaction with the OpenAI LLM via LangChain.
-    """
     def __init__(self):
-        """
-        Initializes the LLM engine, chat history, and the conversation chain.
-        """
         try:
-            self.api_key = os.getenv("OPENAI_API_KEY")
+            # Get the API key from Streamlit's secrets manager
+            self.api_key = st.secrets.openai.api_key
             if not self.api_key:
-                raise ValueError("OPENAI_API_KEY not found in environment variables.")
+                raise ValueError("OPENAI_API_KEY not found in Streamlit secrets.")
+            
 
             # Initialize the LLM model
             self.llm = ChatOpenAI(model="gpt-4o", temperature=0.7, api_key=self.api_key)

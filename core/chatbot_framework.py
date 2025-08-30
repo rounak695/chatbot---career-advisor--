@@ -1,6 +1,40 @@
 from typing import Dict, Any
 import logging
 from datetime import datetime
+from core.rule_engine import RuleEngine # Import Person B's work
+
+class ChatbotFramework:
+    def __init__(self):
+        # ... existing __init__ code ...
+        self.rule_engine = RuleEngine() # Initialize the RuleEngine
+    
+    def process_message(self, user_input: str, session_id: str) -> str:
+        """
+        Process user message and route to the appropriate engine.
+        """
+        # Simple keyword-based intent detection
+        user_input_lower = user_input.lower()
+        rule_based_keywords = ['find careers', 'recommend', 'suggest a job', 'based on my skills']
+
+        # If a keyword is found, use the RuleEngine. Otherwise, use the LLM.
+        if any(keyword in user_input_lower for keyword in rule_based_keywords):
+            try:
+                self.logger.info("Routing to RuleEngine.")
+                return self.rule_engine.get_recommendations(user_input)
+            except Exception as e:
+                self.logger.error(f"Error in RuleEngine: {e}")
+                return "I had an issue finding specific recommendations, but I can still help."
+
+        # Fallback to LLMEngine for conversational queries
+        try:
+            if self.engine and LLM_AVAILABLE:
+                self.logger.info("Routing to LLMEngine.")
+                return self.engine.generate_response(session_id, user_input)
+            else:
+                return self._get_fallback_response(user_input)
+        except Exception as e:
+            self.logger.error(f"Error processing message with LLM: {e}")
+            return "I apologize, but I'm experiencing technical difficulties. Please try again."
 
 # Import will be available when Person C creates the LLMEngine
 try:

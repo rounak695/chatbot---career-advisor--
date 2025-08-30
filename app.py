@@ -2,6 +2,16 @@ import streamlit as st
 import json
 from datetime import datetime
 import uuid
+if 'session_id' not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())
+
+# ... inside the user input section
+if prompt:
+    # ... code to display user message ...
+    
+    # Use the unique session ID from session_state
+    response = framework.process_message(prompt, session_id=st.session_state.session_id)
+
 from core.chatbot_framework import ChatbotFramework
 from utils.sheets_api import SheetsAPI
 from utils.formatter import format_message
