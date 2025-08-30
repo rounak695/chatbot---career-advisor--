@@ -187,22 +187,21 @@ def main():
             # Get bot response
             try:
                 with st.spinner("Thinking..."):
-                    bot_response = st.session_state.chatbot.process_message(
-                        prompt, 
-                        st.session_state.session_id,
-                        st.session_state.messages
+                    ai_reply = st.session_state.chatbot.process_message(
+                        prompt,
+                        st.session_state.session_id
                     )
                 
                 # Add bot response to chat history
                 bot_message = {
                     "role": "assistant",
-                    "content": bot_response,
+                    "content": ai_reply,
                     "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 }
                 st.session_state.messages.append(bot_message)
                 
                 # Save bot message to sheets
-                save_message_to_sheets("assistant", bot_response)
+                save_message_to_sheets("assistant", ai_reply)
                 
             except Exception as e:
                 st.error(f"Sorry, I encountered an error: {e}")
@@ -251,19 +250,18 @@ def main():
             
             try:
                 with st.spinner("Thinking..."):
-                    bot_response = st.session_state.chatbot.process_message(
+                    ai_reply = st.session_state.chatbot.process_message(
                         prompt,
-                        st.session_state.session_id, 
-                        st.session_state.messages
+                        st.session_state.session_id
                     )
                 
                 bot_message = {
                     "role": "assistant",
-                    "content": bot_response,
+                    "content": ai_reply,
                     "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 }
                 st.session_state.messages.append(bot_message)
-                save_message_to_sheets("assistant", bot_response)
+                save_message_to_sheets("assistant", ai_reply)
                 
             except Exception as e:
                 st.error(f"Error: {e}")
