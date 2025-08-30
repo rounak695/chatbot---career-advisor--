@@ -163,4 +163,159 @@ class SheetsAPI:
                 message_data.get('timestamp', ''),
                 message_data.get('role', ''),
                 message_data.get('content', ''),
-                message_data.get('metadata',
+                message_data.get('metadata', '')
+            ]
+            worksheet.append_row(row_data)
+            self.logger.info(f"Appended message for session {message_data.get('session_id', '')[:8]}")
+        except Exception as e:
+            self.logger.error(f"Failed to append message: {e}")
+            raise
+    
+    def save_chat_export(self, export_data: Dict[str, Any]):
+        """Save chat export data"""
+        if not self.client or 'chat_exports' not in self.worksheets:
+            self.logger.warning("Cannot save export - sheets not initialized")
+            return
+        
+        try:
+            worksheet = self.worksheets['chat_exports']
+            row_data = [
+                export_data.get('session_id', ''),
+                export_data.get('session_id', ''),
+                export_data.get('export_timestamp', ''),
+                len(export_data.get('messages', [])),
+                json.dumps(export_data)
+            ]
+            worksheet.append_row(row_data)
+            self.logger.info(f"Saved export for session {export_data.get('session_id', '')[:8]}")
+        except Exception as e:
+            self.logger.error(f"Failed to save export: {e}")
+            raise
+    
+    def get_session_messages(self, session_id: str) -> List[Dict]:
+        """Retrieve all messages for a session"""
+        if not self.client or 'chat_messages' not in self.worksheets:
+            return []
+        
+        try:
+            worksheet = self.worksheets['chat_messages']
+            records = worksheet.get_all_records()
+            
+            session_messages = []
+            for record in records:
+                if record['session_id'] == session_id:
+                    session_messages.append({
+                        'timestamp': record['timestamp'],
+                        'role': record['role'],
+                        'content': record['content'],
+                        'metadata': json.loads(record['metadata']) if record['metadata'] else {}
+                    })
+            
+            return sorted(session_messages, key=lambda x: x['timestamp'])
+            
+        except Exception as e:
+            self.logger.error(f"Failed to get session messages: {e}")
+            return []
+    
+    def save_session_analytics(self, session_data: Dict[str, Any]):
+        """Save session analytics data"""
+        if not self.client or 'session_analytics' not in self.worksheets:
+            self.logger.warning("Cannot save analytics - sheets not initialized")
+            return
+        
+        try:
+            worksheet = self.worksheets['session_analytics']
+            row_data = [
+                session_data.get('session_id', ''),
+                session_data.get('start_time', ''),
+                session_data.get('end_time', datetime.now().isoformat()),
+                session_data.get('message_count', 0),
+                session_data.get('unique_intents', 0),
+                json.dumps(session_data.get('topics', [])),
+                json.dumps(session_data.get('summary', {}))
+            ]
+            worksheet.append_row(row_data)
+            self.logger.info(f"Saved analytics for session {session_data.get('session_id', '')[:8]}")
+        except Exception as e:
+            self.logger.error(f"Failed to save analytics: {e}")
+    
+    def get_all_sessions(self) -> List[str]:
+        """Get list of all session IDs"""
+        if not self.client or 'chat_messages' not in self.worksheets:
+            return []
+        
+        try:
+            worksheet = self.worksheets['chat_messages']
+            session_ids = worksheet.col_values(1)[1:]  # Skip header
+            return list(set(session_ids))  # Remove duplicates
+        except Exception as e:
+            self.logger.error(f"Failed to get sessions: {e}")
+            return []
+    
+    def get_recent_activity(self, days: int = 7) -> Dict[str, Any]:
+        """Get recent activity summary"""
+        if not self.client or 'chat_messages' not in self.worksheets:
+            return {}
+        
+        try:
+            from datetime import datetime, timedelta
+            
+            cutoff_date = datetime.now() - timedelta(days=days)
+            worksheet = self.worksheets['chat_messages']
+            records = worksheet.get_all_records()
+            
+            recent_records = []
+            for record in records:
+                try:
+                    msg_time = datetime.fromisoformat(record['timestamp'].replace('Z', '+00:00'))
+                    if msg_time > cutoff_date:
+                        recent_records.append(record)
+                except:
+                    continue
+            
+            # Analyze recent activity
+            unique_sessions = len(set(r['session_id'] for r in recent_records))
+            total_messages = len(recent_records)
+            user_messages = len([r for r in recent_records if r['role'] == 'user'])
+            
+            return {
+                'days_analyzed': days,
+                'unique_sessions': unique_sessions,
+                'total_messages': total_messages,
+                'user_messages': user_messages,
+                'bot_messages': total_messages - user_messages,
+                'avg_messages_per_session': total_messages / max(unique_sessions, 1)
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Failed to get recent activity: {e}")
+            return {}
+    
+    def health_check(self) -> Dict[str, Any]:
+        """Check the health of the sheets connection"""
+        health_status = {
+            'gspread_available': GSPREAD_AVAILABLE,
+            'client_initialized': self.client is not None,
+            'spreadsheet_connected': self.spreadsheet is not None,
+            'worksheets_setup': len(self.worksheets) > 0,
+            'spreadsheet_id': self.spreadsheet.id if self.spreadsheet else None,
+            'worksheet_count': len(self.worksheets)
+        }
+        
+        # Test write capability
+        try:
+            if self.spreadsheet:
+                # Try to access a worksheet
+                test_sheet = list(self.worksheets.values())[0] if self.worksheets else None
+                if test_sheet:
+                    test_sheet.get('A1:A1')  # Simple read test
+                    health_status['read_test'] = True
+                else:
+                    health_status['read_test'] = False
+            else:
+                health_status['read_test'] = False
+        except Exception as e:
+            health_status['read_test'] = False
+            health_status['read_error'] = str(e)
+        
+        return health_status
