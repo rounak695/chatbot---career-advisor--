@@ -1,9 +1,15 @@
 class LLMResponseError(Exception):
-    """
-    Custom exception raised for errors related to the LLM engine.
-    This can include API connection issues, authentication failures,
-    or problems generating a response.
-    """
-    def __init__(self, message="An error occurred with the LLM service."):
-        self.message = message
-        super().__init__(self.message)
+    """Raised when there's an error generating a response from the LLM"""
+    pass
+
+class SheetsAPIError(Exception):
+    """Raised when there's an error with Google Sheets API operations"""
+    pass
+
+class RuleEngineError(Exception):
+    """Raised when there's an error in the rule engine"""
+    pass
+
+class ChatbotFrameworkError(Exception):
+    """Raised when there's an error in the main chatbot framework"""
+    pass

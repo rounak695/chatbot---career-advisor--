@@ -1,16 +1,30 @@
 import streamlit as st
 from langchain_openai import ChatOpenAI
-# ... other imports
-
-# NO need for load_dotenv or os
+from langchain_core.runnables import RunnableWithMessageHistory
+from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.chat_history import InMemoryChatMessageHistory
+from core.prompts import CAREER_ADVISOR_PROMPT
+from utils.errors import LLMResponseError
 
 class LLMEngine:
     def __init__(self):
         try:
-            # Get the API key from Streamlit's secrets manager
-            self.api_key = st.secrets.openai.api_key
-            if not self.api_key:
-                raise ValueError("OPENAI_API_KEY not found in Streamlit secrets.")
+            # Try to get the API key from Streamlit's secrets manager
+            # Handle case where we're not in a Streamlit context
+            try:
+                if hasattr(st, 'secrets') and hasattr(st.secrets, 'openai'):
+                    self.api_key = st.secrets.openai.api_key
+                else:
+                    # Fallback to environment variable or placeholder
+                    import os
+                    self.api_key = os.environ.get('OPENAI_API_KEY', 'placeholder-key')
+            except Exception:
+                # If we can't access Streamlit secrets, try environment variable
+                import os
+                self.api_key = os.environ.get('OPENAI_API_KEY', 'placeholder-key')
+            
+            if not self.api_key or self.api_key == 'placeholder-key':
+                raise ValueError("OPENAI_API_KEY not found in Streamlit secrets or environment variables.")
             
 
             # Initialize the LLM model

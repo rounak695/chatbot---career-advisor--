@@ -1,4 +1,4 @@
-#core/rule_engine.py                                                                                                                                                                           # core/rule_engine.py
+#core/rule_engine.py                                                                                                                                                                           
 # Person B (career DB for rule engine)
 
 import json
@@ -98,9 +98,9 @@ class RuleEngine:
             CareerPath(
                 id="data_scientist",
                 title="Data Scientist",
-                description="Analyze complex data to derive business insights",
+                description="Analyze complex data to extract business insights",
                 required_skills={"statistics": SkillLevel.ADVANCED.value, "programming": SkillLevel.INTERMEDIATE.value},
-                relevant_interests={"analytics": InterestLevel.HIGH.value, "research": InterestLevel.HIGH.value},
+                relevant_interests={"analytics": InterestLevel.VERY_HIGH.value, "research": InterestLevel.HIGH.value},
                 min_experience=3,
                 min_education="bachelor",
                 typical_salary_range=(80000, 140000),
@@ -110,129 +110,123 @@ class RuleEngine:
             )
         ]
     
-    def _initialize_rules(self) -> List[callable]:
-        """Initialize scoring rules"""
-        return [
-            self._skill_match_rule,
-            self._interest_alignment_rule,
-            self._experience_requirement_rule,
-            self._education_compatibility_rule,
-            self._salary_expectation_rule,
-            self._work_style_preference_rule,
-            self._market_demand_bonus_rule,
-            self._growth_potential_bonus_rule
-        ]
-    
-    def _skill_match_rule(self, user: UserProfile, career: CareerPath) -> float:
-        """Score based on skill matching (40% weight)"""
-        if not career.required_skills:
-            return 0.0
-        
-        total_skills = len(career.required_skills)
-        matched_skills = 0
-        skill_quality_bonus = 0
-        
-        for skill, required_level in career.required_skills.items():
-            if skill in user.skills:
-                user_level = user.skills[skill].value if isinstance(user.skills[skill], SkillLevel) else user.skills[skill]
-                if user_level >= required_level:
-                    matched_skills += 1
-                    # Bonus for exceeding requirements
-                    skill_quality_bonus += max(0, (user_level - required_level) * 0.1)
-        
-        base_score = matched_skills / total_skills
-        return min(1.0, base_score + skill_quality_bonus) * 0.4
-    
-    def _interest_alignment_rule(self, user: UserProfile, career: CareerPath) -> float:
-        """Score based on interest alignment (25% weight)"""
-        if not career.relevant_interests:
-            return 0.0
-        
-        total_interests = len(career.relevant_interests)
-        alignment_score = 0
-        
-        for interest, career_importance in career.relevant_interests.items():
-            if interest in user.interests:
-                user_interest = user.interests[interest].value if isinstance(user.interests[interest], InterestLevel) else user.interests[interest]
-                # Higher score when user interest matches or exceeds career importance
-                alignment_score += min(user_interest / career_importance, 1.5)
-        
-        return min(1.0, alignment_score / total_interests) * 0.25
-    
-    def _experience_requirement_rule(self, user: UserProfile, career: CareerPath) -> float:
-        """Score based on experience requirements (15% weight)"""
-        if user.experience_years >= career.min_experience:
-            # Bonus for exceeding minimum requirements
-            bonus = min(0.2, (user.experience_years - career.min_experience) * 0.02)
-            return min(1.0, 0.8 + bonus) * 0.15
-        else:
-            # Penalty for not meeting requirements
-            deficit = career.min_experience - user.experience_years
-            penalty = min(0.6, deficit * 0.1)
-            return max(0.0, 0.4 - penalty) * 0.15
-    
-    def _education_compatibility_rule(self, user: UserProfile, career: CareerPath) -> float:
-        """Score based on education compatibility (10% weight)"""
-        education_hierarchy = {
-            "high_school": 1,
-            "associate": 2,
-            "bachelor": 3,
-            "master": 4,
-            "phd": 5
+    def _initialize_rules(self) -> Dict[str, Any]:
+        """Initialize rule weights and thresholds"""
+        return {
+            "skill_weight": 0.4,
+            "interest_weight": 0.25,
+            "experience_weight": 0.2,
+            "salary_weight": 0.15,
+            "min_score_threshold": 0.3
         }
-        
-        user_edu_level = education_hierarchy.get(user.education_level.lower(), 1)
-        required_edu_level = education_hierarchy.get(career.min_education.lower(), 1)
-        
-        if user_edu_level >= required_edu_level:
-            return 1.0 * 0.1
-        else:
-            # Partial credit for being close
-            return max(0.0, (user_edu_level / required_edu_level) * 0.7) * 0.1
     
-    def _salary_expectation_rule(self, user: UserProfile, career: CareerPath) -> float:
-        """Score based on salary alignment (5% weight)"""
-        salary_min, salary_max = career.typical_salary_range
-        
-        if salary_min <= user.salary_expectation <= salary_max:
-            return 1.0 * 0.05
-        elif user.salary_expectation < salary_min:
-            # User expects less - still good match
-            return 0.8 * 0.05
-        else:
-            # User expects more - check if it's reasonable
-            overage = user.salary_expectation - salary_max
-            if overage <= salary_max * 0.2:  # Within 20% of max
-                return 0.6 * 0.05
-            else:
-                return 0.2 * 0.05
-    
-    def _work_style_preference_rule(self, user: UserProfile, career: CareerPath) -> float:
-        """Score based on work style compatibility (3% weight)"""
-        if user.preferred_work_style in career.work_style_compatibility:
-            return 1.0 * 0.03
-        else:
-            return 0.0
-    
-    def _market_demand_bonus_rule(self, user: UserProfile, career: CareerPath) -> float:
-        """Bonus for high market demand (1% weight)"""
-        return (career.job_market_demand / 10) * 0.01
-    
-    def _growth_potential_bonus_rule(self, user: UserProfile, career: CareerPath) -> float:
-        """Bonus for high growth potential (1% weight)"""
-        return (career.growth_potential / 10) * 0.01
+    def get_recommendations(self, user_query: str) -> str:
+        """
+        Get career recommendations based on user query.
+        This is a simplified version that provides general recommendations.
+        """
+        try:
+            # For now, return top careers by market demand and growth potential
+            top_careers = sorted(self.career_paths, 
+                               key=lambda x: (x.job_market_demand, x.growth_potential), 
+                               reverse=True)[:5]
+            
+            response = "Based on current market trends and growth potential, here are some promising career paths:\n\n"
+            
+            for i, career in enumerate(top_careers, 1):
+                response += f"{i}. **{career.title}**\n"
+                response += f"   - {career.description}\n"
+                response += f"   - Salary: ${career.typical_salary_range[0]:,} - ${career.typical_salary_range[1]:,}\n"
+                response += f"   - Growth Potential: {career.growth_potential}/10\n"
+                response += f"   - Market Demand: {career.job_market_demand}/10\n\n"
+            
+            response += "Would you like me to analyze your specific skills and interests to provide more personalized recommendations?"
+            return response
+            
+        except Exception as e:
+            return f"I'm having trouble accessing the career database right now. Please try again later. Error: {str(e)}"
     
     def calculate_career_score(self, user: UserProfile, career: CareerPath) -> float:
-        """Calculate total compatibility score for a career path"""
-        total_score = 0.0
+        """Calculate compatibility score between user and career"""
+        skill_score = self._skill_match_rule(user, career)
+        interest_score = self._interest_alignment_rule(user, career)
+        experience_score = self._experience_requirement_rule(user, career)
+        salary_score = self._salary_expectation_rule(user, career)
         
-        for rule in self.rules:
-            score = rule(user, career)
-            total_score += score
+        # Weighted combination
+        total_score = (
+            skill_score * self.rules["skill_weight"] +
+            interest_score * self.rules["interest_weight"] +
+            experience_score * self.rules["experience_weight"] +
+            salary_score * self.rules["salary_weight"]
+        )
         
-        return min(1.0, total_score)  # Cap at 1.0
+        return total_score
     
-    def get_recommendations(self, user: UserProfile, top_n: int = 10) -> List[Tuple[CareerPath, float, Dict[str, str]]]:
+    def _skill_match_rule(self, user: UserProfile, career: CareerPath) -> float:
+        """Calculate skill match score"""
+        if not user.skills:
+            return 0.5  # Neutral score if no skills specified
+        
+        total_score = 0
+        required_skills = len(career.required_skills)
+        
+        for skill, required_level in career.required_skills.items():
+            user_level = user.skills.get(skill, SkillLevel.BEGINNER)
+            if user_level.value >= required_level:
+                total_score += 1.0
+            elif user_level.value >= required_level - 1:
+                total_score += 0.7
+            else:
+                total_score += 0.3
+        
+        return total_score / required_skills if required_skills > 0 else 0
+    
+    def _interest_alignment_rule(self, user: UserProfile, career: CareerPath) -> float:
+        """Calculate interest alignment score"""
+        if not user.interests:
+            return 0.5  # Neutral score if no interests specified
+        
+        total_score = 0
+        relevant_interests = len(career.relevant_interests)
+        
+        for interest, required_level in career.relevant_interests.items():
+            user_level = user.interests.get(interest, InterestLevel.MODERATE)
+            if user_level.value >= required_level:
+                total_score += 1.0
+            elif user_level.value >= required_level - 1:
+                total_score += 0.8
+            else:
+                total_score += 0.4
+        
+        return total_score / relevant_interests if relevant_interests > 0 else 0
+    
+    def _experience_requirement_rule(self, user: UserProfile, career: CareerPath) -> float:
+        """Calculate experience requirement score"""
+        if user.experience_years >= career.min_experience:
+            return 1.0
+        elif user.experience_years >= career.min_experience * 0.7:
+            return 0.8
+        elif user.experience_years >= career.min_experience * 0.5:
+            return 0.6
+        else:
+            return 0.3
+    
+    def _salary_expectation_rule(self, user: UserProfile, career: CareerPath) -> float:
+        """Calculate salary expectation alignment"""
+        min_salary, max_salary = career.typical_salary_range
+        mid_salary = (min_salary + max_salary) / 2
+        
+        if user.salary_expectation <= max_salary and user.salary_expectation >= min_salary:
+            return 1.0
+        elif user.salary_expectation <= max_salary * 1.2:
+            return 0.8
+        elif user.salary_expectation <= max_salary * 1.5:
+            return 0.6
+        else:
+            return 0.4
+    
+    def get_top_recommendations(self, user: UserProfile, top_n: int = 5) -> List[Tuple[CareerPath, float, Dict[str, str]]]:
         """Get top career recommendations with explanations"""
         scored_careers = []
         
@@ -308,28 +302,3 @@ def create_user_profile_from_dict(data: dict) -> UserProfile:
         salary_expectation=data.get('salary_expectation', 50000),
         location_preference=data.get('location_preference', '')
     )
-# core/rule_engine.py
-# Person B (rule-based recommendation system)
-
-class RuleEngine:
-    """
-    Handles rule-based career recommendations based on user profiles and a career database.
-    """
-    def __init__(self):
-        # In the future, this will load the careers.csv data using CareerDatabaseManager
-        pass
-
-    def get_recommendations(self, user_query: str) -> str:
-        """
-        Analyzes the user query and returns a list of career recommendations.
-        
-        This is a placeholder implementation.
-        """
-        # TODO: Implement the actual recommendation logic
-        return (
-            "Based on our rule engine, here are some careers you might be interested in:\n"
-            "- Software Developer\n"
-            "- Data Analyst\n"
-            "- UX/UI Designer\n"
-            "(Note: This is a placeholder response.)"
-        )
